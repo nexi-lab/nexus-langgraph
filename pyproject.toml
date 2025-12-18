@@ -1,0 +1,76 @@
+[project]
+name = "nexus-langgraph"
+version = "0.1.0"
+description = "LangGraph agents with Nexus filesystem integration - Deployable on LangGraph Platform"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+authors = [
+    {name = "Nexus Team"}
+]
+keywords = [
+    "langgraph",
+    "nexus",
+    "agents",
+    "ai",
+    "filesystem"
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+dependencies = [
+    "nexus-fs-python[langgraph]>=0.1.0",
+    "langgraph>=0.2.0",
+    "langchain-core>=0.3.0",
+    "langchain-anthropic>=0.2.0",
+    "langchain-openai>=0.2.0",
+    # Optional dependencies (can be installed separately if needed)
+    "e2b-code-interpreter>=1.0.0",  # For sandbox tools
+    "tavily-python>=0.3.0",         # For web search
+    "firecrawl-py>=1.0.0",           # For web scraping
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.24.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/nexi-lab/nexus-langgraph"
+Documentation = "https://github.com/nexi-lab/nexus-langgraph#readme"
+Repository = "https://github.com/nexi-lab/nexus-langgraph"
+Issues = "https://github.com/nexi-lab/nexus-langgraph/issues"
+
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "."}
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["agents*", "shared*"]
+exclude = ["tests*", "examples*", "scripts*", "docs*"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+ignore = ["E501"]  # Line too long
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
