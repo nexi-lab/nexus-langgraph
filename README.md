@@ -86,7 +86,7 @@ langgraph deploy
 
 ## Status
 
-🚧 **In Planning** - Repository structure being finalized. Migration from `nexus/examples/langgraph` in progress.
+✅ **Initial Migration Complete** - React agent migrated and ready for deployment. Additional agents can be added following the same pattern.
 
 ## Related Projects
 
