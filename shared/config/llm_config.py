@@ -42,17 +42,6 @@ def get_llm(model: str | None = None, provider: str | None = None):
                 temperature=0.7,
             )
 
-    if provider == "openrouter" or (not provider and os.getenv("OPENROUTER_API_KEY")):
-        api_key = os.getenv("OPENROUTER_API_KEY")
-        if api_key:
-            # OpenRouter uses OpenAI client with base_url override
-            return ChatOpenAI(
-                model=model or "anthropic/claude-3.5-sonnet",
-                base_url="https://openrouter.ai/api/v1",
-                api_key=api_key,
-                default_headers={"HTTP-Referer": "https://github.com/nexi-lab/nexus-langgraph"},
-            )
-
     raise ValueError(
         "No LLM API key found. Set one of: ANTHROPIC_API_KEY, OPENAI_API_KEY, or OPENROUTER_API_KEY"
     )

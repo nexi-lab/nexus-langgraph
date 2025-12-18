@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""ReAct Agent using LangGraph's Prebuilt create_react_agent.
+"""ReAct Agent using LangChain's create_agent.
 
-This agent demonstrates how to use LangGraph's prebuilt create_react_agent
-function to quickly build a ReAct agent with Nexus filesystem integration.
+This agent demonstrates how to use LangChain's create_agent function
+to build a ReAct agent with Nexus filesystem integration.
 
 Authentication:
     API keys are REQUIRED via metadata.x_auth: "Bearer <token>"
@@ -29,9 +29,8 @@ Usage from Frontend (HTTP):
 
 import os
 
-from langchain_core.messages import SystemMessage
-from langchain_core.runnables import RunnableConfig, RunnableLambda
-from langgraph.prebuilt import create_react_agent
+from langchain.agents import create_agent
+from langchain_core.runnables import RunnableConfig
 
 from shared.config.llm_config import get_llm
 from shared.prompts.react_prompt import get_system_prompt
@@ -61,79 +60,29 @@ def get_llm_instance():
     return _llm
 
 
-def build_prompt(state: dict, config: RunnableConfig) -> list:
-    """Build prompt with optional opened file context from metadata.
-
-    This function is called before each LLM invocation and can access
-    the config which includes metadata from the frontend.
-
-    Args:
-        state: Current agent state
-        config: Runtime configuration with metadata
-
-    Returns:
-        List of messages (system message + user messages)
+# Create ReAct agent with dynamic prompt
+# LangGraph Platform expects a factory function that takes RunnableConfig
+def agent(config: RunnableConfig):
     """
-    # Get complete prompt with opened file context
-    system_content = get_system_prompt(config, role="general", state=state)
-
-    # Return system message + user messages
-    return [SystemMessage(content=system_content)] + state["messages"]
-
-
-# Create a runnable that wraps the prompt builder
-prompt_runnable = RunnableLambda(build_prompt)
-
-# Create prebuilt ReAct agent with dynamic prompt
-# Use a lazy wrapper class so agent creation happens on first access
-class LazyAgent:
-    """Lazy wrapper for agent that creates it on first access."""
+    Factory function to create the ReAct agent.
     
-    def __init__(self):
-        self._agent = None
+    LangGraph Platform calls this with a RunnableConfig to create the agent instance.
+    The agent is created lazily when first needed (allows import without API keys).
     
-    def __call__(self, *args, **kwargs):
-        """Make it callable like the agent."""
-        if self._agent is None:
-            self._agent = create_react_agent(
-                model=get_llm_instance(),
-                tools=tools,
-                prompt=prompt_runnable,
-            )
-        return self._agent(*args, **kwargs)
+    Args:
+        config: Runtime configuration (provided by LangGraph Platform)
     
-    def __getattr__(self, name):
-        """Delegate attribute access to the actual agent."""
-        if self._agent is None:
-            self._agent = create_react_agent(
-                model=get_llm_instance(),
-                tools=tools,
-                prompt=prompt_runnable,
-            )
-        return getattr(self._agent, name)
+    Returns:
+        Compiled LangGraph agent
+    """
+    # Get system prompt dynamically from config (includes opened file context)
+    # Note: We use an empty state dict since we're creating the agent, not running it
+    # The actual state will be available during execution
+    system_prompt = get_system_prompt(config, role="general", state={})
     
-    def invoke(self, *args, **kwargs):
-        """Invoke method for LangGraph compatibility."""
-        if self._agent is None:
-            self._agent = create_react_agent(
-                model=get_llm_instance(),
-                tools=tools,
-                prompt=prompt_runnable,
-            )
-        return self._agent.invoke(*args, **kwargs)
-    
-    def stream(self, *args, **kwargs):
-        """Stream method for LangGraph compatibility."""
-        if self._agent is None:
-            self._agent = create_react_agent(
-                model=get_llm_instance(),
-                tools=tools,
-                prompt=prompt_runnable,
-            )
-        return self._agent.stream(*args, **kwargs)
-
-
-# Export agent - will be created lazily on first use
-# This allows import without API keys (needed for LangGraph Platform)
-# LangGraph Platform will load .env automatically before importing
-agent = LazyAgent()
+    # Create the agent with the new create_agent API
+    return create_agent(
+        model=get_llm_instance(),
+        tools=tools,
+        system_prompt=system_prompt,
+    )

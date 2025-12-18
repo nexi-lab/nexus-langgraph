@@ -59,7 +59,7 @@ def get_nexus_tools():
 
     # Web Search and Fetch Tools (optional - only if API keys are available)
     @tool
-    def web_search(query: str, config: RunnableConfig, max_results: int = 5) -> str:  # noqa: ARG001
+    async def web_search(query: str, config: RunnableConfig, max_results: int = 5) -> str:  # noqa: ARG001
         """Search the web for current information. Returns titles, URLs, snippets.
 
         Args:
@@ -70,6 +70,7 @@ def get_nexus_tools():
         """
         try:
             # Import here to avoid requiring tavily when not used
+            import asyncio
             from tavily import TavilyClient
 
             # Get API key from environment
@@ -80,8 +81,8 @@ def get_nexus_tools():
             # Initialize Tavily client
             client = TavilyClient(api_key=api_key)
 
-            # Perform search
-            response = client.search(query=query, max_results=max_results)
+            # Perform search (run in thread pool since TavilyClient is sync)
+            response = await asyncio.to_thread(client.search, query=query, max_results=max_results)
 
             # Format results
             if not response or "results" not in response:
@@ -116,7 +117,7 @@ def get_nexus_tools():
             return f"Error performing web search: {str(e)}"
 
     @tool
-    def web_crawl(url: str, config: RunnableConfig) -> str:  # noqa: ARG001
+    async def web_crawl(url: str, config: RunnableConfig) -> str:  # noqa: ARG001
         """Fetch and extract web page content as clean markdown with metadata.
 
         Args:
@@ -126,6 +127,7 @@ def get_nexus_tools():
         """
         try:
             # Import here to avoid requiring firecrawl when not used
+            import asyncio
             from firecrawl import FirecrawlApp
 
             # Get API key from environment
@@ -137,7 +139,8 @@ def get_nexus_tools():
             app = FirecrawlApp(api_key=api_key)
 
             # Scrape the URL (API v4.5.0+ returns Document object with formats parameter)
-            result = app.scrape(url, formats=["markdown", "html"])
+            # Run in thread pool since FirecrawlApp is sync
+            result = await asyncio.to_thread(app.scrape, url, formats=["markdown", "html"])
 
             if not result:
                 return f"Error: Failed to fetch content from {url}"
