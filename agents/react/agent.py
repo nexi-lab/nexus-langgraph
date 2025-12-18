@@ -49,8 +49,16 @@ else:
 # Create tools (no API key needed - will be passed per-request via metadata)
 tools = get_nexus_tools()
 
-# Create LLM
-llm = get_llm()
+# LLM will be created lazily on first use (allows import without API keys)
+_llm = None
+
+
+def get_llm_instance():
+    """Get or create LLM instance (lazy initialization)."""
+    global _llm
+    if _llm is None:
+        _llm = get_llm()
+    return _llm
 
 
 def build_prompt(state: dict, config: RunnableConfig) -> list:
@@ -77,8 +85,55 @@ def build_prompt(state: dict, config: RunnableConfig) -> list:
 prompt_runnable = RunnableLambda(build_prompt)
 
 # Create prebuilt ReAct agent with dynamic prompt
-agent = create_react_agent(
-    model=llm,
-    tools=tools,
-    prompt=prompt_runnable,
-)
+# Use a lazy wrapper class so agent creation happens on first access
+class LazyAgent:
+    """Lazy wrapper for agent that creates it on first access."""
+    
+    def __init__(self):
+        self._agent = None
+    
+    def __call__(self, *args, **kwargs):
+        """Make it callable like the agent."""
+        if self._agent is None:
+            self._agent = create_react_agent(
+                model=get_llm_instance(),
+                tools=tools,
+                prompt=prompt_runnable,
+            )
+        return self._agent(*args, **kwargs)
+    
+    def __getattr__(self, name):
+        """Delegate attribute access to the actual agent."""
+        if self._agent is None:
+            self._agent = create_react_agent(
+                model=get_llm_instance(),
+                tools=tools,
+                prompt=prompt_runnable,
+            )
+        return getattr(self._agent, name)
+    
+    def invoke(self, *args, **kwargs):
+        """Invoke method for LangGraph compatibility."""
+        if self._agent is None:
+            self._agent = create_react_agent(
+                model=get_llm_instance(),
+                tools=tools,
+                prompt=prompt_runnable,
+            )
+        return self._agent.invoke(*args, **kwargs)
+    
+    def stream(self, *args, **kwargs):
+        """Stream method for LangGraph compatibility."""
+        if self._agent is None:
+            self._agent = create_react_agent(
+                model=get_llm_instance(),
+                tools=tools,
+                prompt=prompt_runnable,
+            )
+        return self._agent.stream(*args, **kwargs)
+
+
+# Export agent - will be created lazily on first use
+# This allows import without API keys (needed for LangGraph Platform)
+# LangGraph Platform will load .env automatically before importing
+agent = LazyAgent()
