@@ -23,24 +23,10 @@ nexus-langgraph/
 │   │   ├── README.md                  # Agent-specific documentation
 │   │   └── config.py                  # Agent-specific configuration
 │   │
-│   ├── quant/                         # Quantitative trading agent
-│   │   ├── __init__.py
-│   │   ├── agent.py
-│   │   ├── README.md
-│   │   ├── config.py
-│   │   └── strategies/                # Strategy-specific code
-│   │       └── backtest.py
-│   │
-│   ├── talent/                        # Talent & company search agent
-│   │   ├── __init__.py
-│   │   ├── agent.py
-│   │   ├── README.md
-│   │   └── config.py
-│   │
-│   └── code_analyzer/                 # Code analysis agent (future)
-│       ├── __init__.py
-│       ├── agent.py
-│       └── README.md
+│   └── [future agents]                # Additional agents can be added here
+│       # quant/                       # Quantitative trading agent (future)
+│       # talent/                      # Talent & company search agent (future)
+│       # code_analyzer/              # Code analysis agent (future)
 │
 ├── shared/                            # Shared utilities and tools
 │   ├── __init__.py
@@ -70,9 +56,8 @@ nexus-langgraph/
 │   ├── __init__.py
 │   ├── conftest.py                    # Pytest configuration
 │   ├── test_agents/
-│   │   ├── test_react_agent.py
-│   │   ├── test_quant_agent.py
-│   │   └── test_talent_agent.py
+│   │   └── test_react_agent.py
+│   │   # Additional agent tests can be added here
 │   └── test_shared/
 │       ├── test_tools.py
 │       └── test_config.py
@@ -130,13 +115,13 @@ Common code used across multiple agents:
 {
   "dependencies": ["."],
   "graphs": {
-    "react": "./agents/react/agent.py:agent",
-    "quant": "./agents/quant/agent.py:agent",
-    "talent": "./agents/talent/agent.py:agent"
+    "react": "./agents/react/agent.py:agent"
   },
   "env": ".env"
 }
 ```
+
+**Note:** Additional agents (quant, talent, etc.) can be added to the `graphs` object as they are migrated.
 
 **Benefits:**
 - Single deployment config
@@ -225,9 +210,8 @@ Deploy via LangGraph Platform as `react` assistant.
 
 ### Phase 3: Migrate Agents
 1. Move `react_agent.py` → `agents/react/agent.py`
-2. Move `quant_agent.py` → `agents/quant/agent.py`
-3. Move `talent_agent.py` → `agents/talent/agent.py`
-4. Update imports to use shared utilities
+2. Update imports to use shared utilities
+3. (Future) Migrate quant and talent agents when ready
 
 ### Phase 4: Testing & Documentation
 1. Add tests for each agent
@@ -242,9 +226,7 @@ If you prefer a flatter structure:
 ```
 nexus-langgraph/
 ├── agents/
-│   ├── react_agent.py
-│   ├── quant_agent.py
-│   └── talent_agent.py
+│   └── react_agent.py
 ├── tools/
 │   └── nexus_tools.py
 ├── prompts/

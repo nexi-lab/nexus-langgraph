@@ -31,23 +31,13 @@ nexus-langgraph/
 
 ## Available Agents
 
-### 1. ReAct Agent (`react`)
+### ReAct Agent (`react`)
 General-purpose ReAct agent with Nexus filesystem access.
 - File search and analysis
 - Code reading and writing
 - Documentation generation
 
-### 2. Quant Agent (`quant`)
-Quantitative trading strategy agent.
-- Strategy development
-- Backtesting
-- Market analysis
-
-### 3. Talent Agent (`talent`)
-Talent and company search agent.
-- People profile search
-- Company matching
-- Location-based filtering
+**Additional agents** (quant, talent, etc.) will be added in future updates.
 
 ## Quick Start
 
