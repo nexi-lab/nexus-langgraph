@@ -65,28 +65,31 @@ def get_llm_instance():
 def agent(config: RunnableConfig):
     """
     Factory function to create the ReAct agent.
-    
+
     LangGraph Platform calls this with a RunnableConfig to create the agent instance.
     The agent is created lazily when first needed (allows import without API keys).
-    
+
     Args:
         config: Runtime configuration (provided by LangGraph Platform)
-    
+
     Returns:
         Compiled LangGraph agent
     """
+
     # Create a prompt function that LangGraph can call dynamically
     # This allows the prompt to be generated at runtime with access to state
     # The config is captured in the closure from the factory function
     def make_prompt_func(factory_config):
         """Create a prompt function with config captured in closure."""
+
         async def prompt_func(state):
             """Dynamic prompt function that LangGraph calls at runtime."""
             # Use the config from the factory function (captured in closure)
             # LangGraph will call this with state, and we use the factory config for auth
             return await get_system_prompt_async(factory_config, role="general", state=state)
+
         return prompt_func
-    
+
     # Create the agent with the new create_agent API
     # LangGraph's create_agent supports async callables for system_prompt
     return create_agent(

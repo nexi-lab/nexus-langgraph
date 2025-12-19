@@ -101,9 +101,7 @@ def get_nexus_tools():
 
                 output_lines.append(f"\n{i}. {title}")
                 output_lines.append(f"   URL: {url}")
-                output_lines.append(
-                    f"   {content[:300]}..." if len(content) > 300 else f"   {content}"
-                )
+                output_lines.append(f"   {content[:300]}..." if len(content) > 300 else f"   {content}")
 
             # Add answer if available
             if "answer" in response and response["answer"]:

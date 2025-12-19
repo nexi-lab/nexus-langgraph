@@ -42,6 +42,4 @@ def get_llm(model: str | None = None, provider: str | None = None):
                 temperature=0.7,
             )
 
-    raise ValueError(
-        "No LLM API key found. Set one of: ANTHROPIC_API_KEY, OPENAI_API_KEY, or OPENROUTER_API_KEY"
-    )
+    raise ValueError("No LLM API key found. Set one of: ANTHROPIC_API_KEY, OPENAI_API_KEY, or OPENROUTER_API_KEY")
