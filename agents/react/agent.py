@@ -33,7 +33,7 @@ from langchain.agents import create_agent
 from langchain_core.runnables import RunnableConfig
 
 from shared.config.llm_config import get_llm
-from shared.prompts.react_prompt import get_system_prompt
+from shared.prompts.react_prompt import get_system_prompt_async
 from shared.tools.nexus_tools import get_nexus_tools
 
 # Get configuration from environment variables
@@ -75,14 +75,22 @@ def agent(config: RunnableConfig):
     Returns:
         Compiled LangGraph agent
     """
-    # Get system prompt dynamically from config (includes opened file context)
-    # Note: We use an empty state dict since we're creating the agent, not running it
-    # The actual state will be available during execution
-    system_prompt = get_system_prompt(config, role="general", state={})
+    # Create a prompt function that LangGraph can call dynamically
+    # This allows the prompt to be generated at runtime with access to state
+    # The config is captured in the closure from the factory function
+    def make_prompt_func(factory_config):
+        """Create a prompt function with config captured in closure."""
+        async def prompt_func(state):
+            """Dynamic prompt function that LangGraph calls at runtime."""
+            # Use the config from the factory function (captured in closure)
+            # LangGraph will call this with state, and we use the factory config for auth
+            return await get_system_prompt_async(factory_config, role="general", state=state)
+        return prompt_func
     
     # Create the agent with the new create_agent API
+    # LangGraph's create_agent supports async callables for system_prompt
     return create_agent(
         model=get_llm_instance(),
         tools=tools,
-        system_prompt=system_prompt,
+        system_prompt=make_prompt_func(config),  # Pass async callable instead of string
     )
