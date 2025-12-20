@@ -97,3 +97,4 @@ def agent(config: RunnableConfig):
         tools=tools,
         system_prompt=make_prompt_func(config),  # Pass async callable instead of string
     )
+

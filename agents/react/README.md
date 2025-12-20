@@ -62,3 +62,4 @@ The agent uses:
 - **LLM**: Claude Sonnet 4.5 (default) or configured via environment
 - **Tools**: All Nexus tools + optional web tools
 - **Prompt**: Dynamic prompt with opened file context
+

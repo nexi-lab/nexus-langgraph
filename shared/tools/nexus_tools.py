@@ -210,3 +210,4 @@ def get_nexus_tools():
 
     # Return all tools (official + optional web tools)
     return official_tools + web_tools
+

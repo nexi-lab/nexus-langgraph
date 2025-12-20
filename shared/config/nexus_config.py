@@ -19,3 +19,4 @@ def get_nexus_api_key() -> str | None:
         Nexus API key or None if not set
     """
     return os.getenv("NEXUS_API_KEY")
+
