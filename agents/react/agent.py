@@ -28,6 +28,7 @@ Usage from Frontend (HTTP):
     Note: The frontend automatically includes x_auth, workspace_path, and opened_file_path in metadata when user is logged in.
 """
 
+import logging
 import os
 
 from langchain.agents import create_agent
@@ -35,6 +36,12 @@ from langchain_core.runnables import RunnableConfig
 
 from shared.config.llm_config import get_llm
 from shared.tools.nexus_tools import get_nexus_tools
+
+# Configure logging to show INFO level logs
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 
 # Get configuration from environment variables
 E2B_TEMPLATE_ID = os.getenv("E2B_TEMPLATE_ID")
@@ -77,7 +84,7 @@ async def agent(config: RunnableConfig):
     """
     from shared.prompts.react_prompt import get_system_prompt_async
 
-    system_prompt_str = await get_system_prompt_async(config, role="general", state=None)
+    system_prompt_str = await get_system_prompt_async(config, role="general")
 
     # Create the agent with the create_agent API
     return create_agent(
