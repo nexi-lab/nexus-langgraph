@@ -285,3 +285,7 @@ I recommend the **first structure** (with `agents/` subdirectories) because:
    - Unit tests per agent?
    - Integration tests?
    - Mock Nexus server for tests?
+
+
+
+

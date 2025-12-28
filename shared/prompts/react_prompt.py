@@ -163,34 +163,3 @@ async def get_system_prompt_async(
             opened_file_section = f"\n\nCurrently viewing file: {opened_file}"
 
     return base_prompt + skills_section + opened_file_section
-
-
-def get_system_prompt(config: RunnableConfig | None = None, role: str = "general", state: dict | None = None) -> str:
-    """Get system prompt synchronously (backward compatibility wrapper).
-
-    This is a sync wrapper around the async version. For new code, prefer using
-    get_system_prompt_async directly or pass it as a callable to create_agent.
-
-    Args:
-        config: Runtime configuration (provided by framework) containing auth metadata
-        role: Agent role ("general", "coding", "analysis", etc.)
-        state: Optional agent state (injected by LangGraph)
-
-    Returns:
-        System prompt string with skills list included (if available)
-    """
-    import asyncio
-
-    # Try to use existing event loop if available
-    try:
-        loop = asyncio.get_running_loop()
-        # If we're in an async context, we can't use asyncio.run()
-        # In this case, we'll need to use the async version directly
-        # For now, return a basic prompt (caller should use async version)
-        base_prompt = "You are a helpful AI assistant with access to Nexus filesystem operations. "
-        base_prompt += "You can search, read, write, and analyze files to help users with their tasks."
-        return base_prompt
-    except RuntimeError:
-        # No running loop, we can use asyncio.run()
-        return asyncio.run(get_system_prompt_async(config, role=role, state=state))
-

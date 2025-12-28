@@ -1,8 +1,13 @@
 {
   "dependencies": ["."],
   "graphs": {
-    "react": "./agents/react/agent.py:agent"
+    "react": "./agents/react/agent.py:agent",
+    "agent": "./agents/react/agent.py:agent"
   },
   "env": ".env"
 }
+
+
+
+
 

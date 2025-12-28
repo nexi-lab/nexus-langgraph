@@ -63,3 +63,7 @@ The agent uses:
 - **Tools**: All Nexus tools + optional web tools
 - **Prompt**: Dynamic prompt with opened file context
 
+
+
+
+
