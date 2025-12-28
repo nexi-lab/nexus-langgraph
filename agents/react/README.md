@@ -51,6 +51,7 @@ Optional:
   },
   "metadata": {
     "x_auth": "Bearer sk-your-nexus-api-key",
+    "workspace_path": "/tenant:multifi.ai/user:e1592bdf.../workspace/ws_build_606",
     "opened_file_path": "/workspace/admin/script.py"
   }
 }
@@ -61,7 +62,7 @@ Optional:
 The agent uses:
 - **LLM**: Claude Sonnet 4.5 (default) or configured via environment
 - **Tools**: All Nexus tools + optional web tools
-- **Prompt**: Dynamic prompt with opened file context
+- **Prompt**: Dynamic prompt with workspace and opened file context
 
 
 

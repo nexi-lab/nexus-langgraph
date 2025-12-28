@@ -20,11 +20,12 @@ Usage from Frontend (HTTP):
             "x_auth": "Bearer sk-your-api-key-here",
             "user_id": "user-123",
             "tenant_id": "tenant-123",
+            "workspace_path": "/tenant:multifi.ai/user:e1592bdf.../workspace/ws_build_606",  // Optional: current workspace
             "opened_file_path": "/workspace/admin/script.py"  // Optional: currently opened file
         }
     }
 
-    Note: The frontend automatically includes x_auth and opened_file_path in metadata when user is logged in.
+    Note: The frontend automatically includes x_auth, workspace_path, and opened_file_path in metadata when user is logged in.
 """
 
 import os
