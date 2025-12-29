@@ -31,7 +31,7 @@ NEXUS_TOOLS_SYSTEM_PROMPT = """# Nexus Filesystem & Sandbox Tools
 ## Workflow
 Search → Read → Analyze → Execute/Write
 
-In sandboxes, prefix paths with `/mnt/nexus` to access Nexus filesystem.
+In sandboxes, prefix paths with `/mnt/nexus` to access Nexus filesystem, always add /mnt/nexus to the file path when using bash and python tool.
 """
 
 # General purpose agent system prompt
