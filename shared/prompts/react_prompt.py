@@ -15,23 +15,19 @@ from langchain_core.runnables import RunnableConfig
 logger = logging.getLogger(__name__)
 
 # Base system prompt describing Nexus tools
-NEXUS_TOOLS_SYSTEM_PROMPT = """# Nexus Filesystem & Sandbox Tools
+NEXUS_TOOLS_SYSTEM_PROMPT = """<nexus_tools>
+Files: grep_files(), glob_files(), read_file(), write_file()
+Sandbox: python(), bash() — Nexus at /mnt/nexus
 
-## Tools
+read_file examples:
+- cat /file.py — full file
+- cat /file.py 10 20 — lines 10-20
+- less /large.json — preview
 
-**Files:** `grep_files(pattern, path, file_pattern, ignore_case)`, `glob_files(pattern, path)`, `read_file(cmd)`, `write_file(path, content)`
-**Sandbox:** `python(code)`, `bash(command)` — Nexus mounted at `/mnt/nexus`
-**Memory:** `query_memories()`
+Workflow: Search → Read → Analyze → Execute/Write
 
-## read_file Examples
-- `cat /file.py` — full file
-- `cat /file.py 10 20` — lines 10-20
-- `less /large.json` — preview (first 100 lines)
-
-## Workflow
-Search → Read → Analyze → Execute/Write
-
-In sandboxes, prefix paths with `/mnt/nexus` to access Nexus filesystem, always add /mnt/nexus to the file path when using bash and python tool.
+Note: In sandboxes, prefix paths with /mnt/nexus
+</nexus_tools>
 """
 
 # General purpose agent system prompt
@@ -39,43 +35,15 @@ GENERAL_AGENT_SYSTEM_PROMPT = f"""You are a versatile AI assistant with access t
 
 {NEXUS_TOOLS_SYSTEM_PROMPT}
 
-## Your Role
+You help with coding, data analysis, research, and file operations.
 
-Help users accomplish a wide variety of tasks including coding, data analysis, research, file operations, and general assistance. Adapt your approach based on the user's request:
+Workflow:
+1. Search/explore before creating new solutions
+2. Use appropriate tools for the task
+3. Test and verify your work
+4. Provide clear explanations
 
-1. **Understand the task**: Clarify requirements and determine the best approach
-2. **Explore first**: Search for relevant files, data, or existing code before creating new solutions
-3. **Use appropriate tools**: Choose the right combination of filesystem, sandbox, and memory tools
-4. **Test and verify**: When writing code or performing operations, validate results
-5. **Communicate clearly**: Provide explanations, reasoning, and actionable information
-
-## Task Guidelines
-
-**For coding tasks:**
-- Search for existing patterns and libraries first
-- Write clean, well-documented code
-- Test implementations in the sandbox
-- Include error handling where appropriate
-
-**For data tasks:**
-- Explore data structure and format first
-- Use pandas/numpy for efficient analysis
-- Create visualizations when helpful
-- Summarize insights clearly
-
-**For research tasks:**
-- Plan search strategy systematically
-- Read documentation and relevant files
-- Synthesize information from multiple sources
-- Cite specific files and line numbers
-
-**For file operations:**
-- Use glob_files to find files by pattern
-- Use grep_files to search file contents
-- Preview large files before full read
-- Verify writes were successful
-
-Be proactive, thorough, and adapt to the user's needs.
+Be concise and action-oriented.
 """
 
 
@@ -90,10 +58,9 @@ async def get_skills_prompt_async(config: RunnableConfig, state: dict[str, Any] 
         Formatted markdown string describing available skills, or empty string if no skills found
     """
     try:
-        from nexus_client.langgraph.tools import list_skills
+        from nexus_client.langgraph.prompt import skills_discover
 
-        # list_skills is synchronous, so run it in a thread to avoid blocking the event loop
-        skills_result = await asyncio.to_thread(list_skills, config, state, tier="all")
+        skills_result = await skills_discover(config, state, filter="subscribed")
 
         skills_data = skills_result.get("skills", [])
 
@@ -102,23 +69,21 @@ async def get_skills_prompt_async(config: RunnableConfig, state: dict[str, Any] 
 
         logger.info(f"Loaded {len(skills_data)} skills")
 
-        prompt_lines = [
-            "\n\n## Available Skills\n\n",
-            "The following skills are available in the Nexus system that you can reference or use:\n\n",
-        ]
+        prompt_lines = ["\n\n<skills count=\"", str(len(skills_data)), "\">\n"]
 
-        for i, skill in enumerate(skills_data, 1):
+        for skill in skills_data:
             name = skill.get("name", "Unknown")
             description = skill.get("description", "No description")
             file_path = skill.get("file_path", None)
 
-            prompt_lines.append(f"{i}. **{name}**")
-            prompt_lines[-1] += f"   {description}\n"
+            prompt_lines.append("  <skill>\n")
+            prompt_lines.append(f"    <name>{name}</name>\n")
+            prompt_lines.append(f"    <description>{description}</description>\n")
             if file_path:
-                prompt_lines.append(f"   Path: `{file_path}`\n")
-            prompt_lines.append("\n")
+                prompt_lines.append(f"    <file_path>{file_path}</file_path>\n")
+            prompt_lines.append("  </skill>\n")
 
-        prompt_lines.append(f"Total: {len(skills_data)} skills available\n")
+        prompt_lines.append("</skills>\n")
 
         return "".join(prompt_lines)
 
@@ -182,11 +147,9 @@ When the user asks questions or requests changes without specifying a file, they
         if workspace_path:
             full_prompt += f"""
 
-## Workspace Context
-
-The user is currently working in the following workspace:
-**{workspace_path}**
-
-All file operations, code modifications, and project-related tasks should be performed within this workspace context. When the user references files or directories without absolute paths, they are relative to this workspace."""
+<workspace_context>
+  <path>{workspace_path}</path>
+  <description>All file operations, code modifications, and project-related tasks should be performed within this workspace context. When the user references files or directories without absolute paths, they are relative to this workspace.</description>
+</workspace_context>"""
 
     return full_prompt
