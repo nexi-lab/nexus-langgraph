@@ -50,24 +50,47 @@ Be concise and action-oriented.
 async def get_skills_prompt_async(config: RunnableConfig, state: dict[str, Any] | None = None) -> str:
     """Generate a formatted skills prompt section from available Nexus skills.
 
+    Checks for assigned_skills in metadata first. If present and non-empty,
+    uses those skills. Otherwise falls back to discovering all subscribed skills.
+
     Args:
-        config: Runtime configuration containing auth metadata
+        config: Runtime configuration containing auth metadata and assigned_skills
         state: Optional agent state
 
     Returns:
         Formatted markdown string describing available skills, or empty string if no skills found
     """
     try:
-        from nexus_client.langgraph.prompt import skills_discover
+        # Check for assigned_skills in metadata first
+        metadata = config.get("metadata", {}) if config else {}
+        assigned_skills = metadata.get("assigned_skills", [])
 
-        skills_result = await skills_discover(config, state, filter="subscribed")
+        skills_data = []
 
-        skills_data = skills_result.get("skills", [])
+        if assigned_skills and len(assigned_skills) > 0:
+            # Use assigned skills from metadata
+            logger.info(f"Using {len(assigned_skills)} assigned skills from metadata")
+
+            # assigned_skills format: [{name, description, path}]
+            # Convert to skills_data format expected by the prompt builder
+            for skill in assigned_skills:
+                skills_data.append({
+                    "name": skill.get("name", "Unknown"),
+                    "description": skill.get("description", "No description"),
+                    "file_path": skill.get("path", None)
+                })
+        else:
+            # Fall back to discovering all subscribed skills
+            logger.info("No assigned skills in metadata, discovering subscribed skills")
+            from nexus_client.langgraph.prompt import skills_discover
+
+            skills_result = await skills_discover(config, state, filter="subscribed")
+            skills_data = skills_result.get("skills", [])
 
         if not skills_data:
             return ""
 
-        logger.info(f"Loaded {len(skills_data)} skills")
+        logger.info(f"Loaded {len(skills_data)} skills for prompt")
 
         prompt_lines = ["\n\n<skills count=\"", str(len(skills_data)), "\">\n"]
 
