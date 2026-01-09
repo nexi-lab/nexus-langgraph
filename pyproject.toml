@@ -26,7 +26,7 @@ classifiers = [
 ]
 
 dependencies = [
-    "nexus-fs-python[langgraph]>=0.1.0",
+    "nexus-fs-python[langgraph]>=0.1.2",
     "langgraph>=0.2.0",
     "langgraph-cli>=0.3.6",
     "langgraph-api>=0.2.130",
