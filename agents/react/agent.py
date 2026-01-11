@@ -53,16 +53,33 @@ else:
     print("E2B sandbox disabled (E2B_TEMPLATE_ID not set)")
 
 
-# LLM will be created lazily on first use (allows import without API keys)
-_llm = None
+def get_llm_instance(
+    provider: str | None = None,
+    tier: str | None = None,
+    model: str | None = None,
+    enable_thinking: bool = False,
+    thinking_budget: int = 2048,
+):
+    """
+    Get LLM instance with specified configuration.
 
+    Args:
+        provider: LLM provider ("anthropic", "openai", "gemini")
+        tier: Model tier ("pro" or "flash"). Defaults to "flash" if not specified.
+        model: Specific model ID (overrides tier selection)
+        enable_thinking: Enable extended thinking/reasoning (currently only for Claude)
+        thinking_budget: Token budget for thinking (minimum 1024, default 2048)
 
-def get_llm_instance():
-    """Get or create LLM instance (lazy initialization)."""
-    global _llm
-    if _llm is None:
-        _llm = get_llm()
-    return _llm
+    Returns:
+        Configured LLM instance
+    """
+    return get_llm(
+        provider=provider,
+        tier=tier,
+        model=model,
+        enable_thinking=enable_thinking,
+        thinking_budget=thinking_budget,
+    )
 
 
 # Create ReAct agent with dynamic prompt
@@ -75,12 +92,37 @@ async def agent(config: RunnableConfig):
     The agent is created lazily when first needed (allows import without API keys).
 
     Args:
-        config: Runtime configuration (provided by LangGraph Platform)
+        config: Runtime configuration (provided by LangGraph Platform).
+                Supports LLM configuration via metadata:
+                - llm_provider: "anthropic", "openai", or "gemini"
+                - llm_tier: "pro" or "flash" (defaults to "flash")
+                - llm_model: Specific model ID (overrides tier)
 
     Returns:
         Compiled LangGraph agent
+
+    Examples:
+        # Use default (flash tier, auto-detected provider)
+        config = {"metadata": {}}
+
+        # Use specific provider with flash tier
+        config = {"metadata": {"llm_provider": "anthropic"}}
+
+        # Use pro tier for advanced capabilities
+        config = {"metadata": {"llm_provider": "openai", "llm_tier": "pro"}}
+
+        # Use specific model
+        config = {"metadata": {"llm_model": "claude-opus-4-5-20251101", "llm_provider": "anthropic"}}
     """
     from shared.prompts.react_prompt import get_system_prompt_async
+
+    # Extract LLM configuration from metadata
+    metadata = config.get("metadata", {})
+    llm_provider = metadata.get("llm_provider")
+    llm_tier = metadata.get("llm_tier")
+    llm_model = metadata.get("llm_model")
+    enable_thinking = metadata.get("enable_thinking", False)
+    thinking_budget = metadata.get("thinking_budget", 2048)
 
     system_prompt_str = await get_system_prompt_async(config, role="general")
 
@@ -89,7 +131,13 @@ async def agent(config: RunnableConfig):
         tools += get_nexus_sandbox_tools()
 
     return create_agent(
-        model=get_llm_instance(),
+        model=get_llm_instance(
+            provider=llm_provider,
+            tier=llm_tier,
+            model=llm_model,
+            enable_thinking=enable_thinking,
+            thinking_budget=thinking_budget,
+        ),
         tools=tools,
         system_prompt=system_prompt_str,
     )
