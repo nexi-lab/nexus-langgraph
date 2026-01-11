@@ -6,7 +6,6 @@ Copied from nexus.tools.prompts to avoid dependency on nexus package.
 Dependencies: nexus-fs-python[langgraph] (provides nexus_client.langgraph.tools.list_skills)
 """
 
-import asyncio
 import logging
 from typing import Any
 
@@ -17,16 +16,15 @@ logger = logging.getLogger(__name__)
 # Base system prompt describing Nexus tools
 NEXUS_TOOLS_SYSTEM_PROMPT = """<nexus_tools>
 Files: grep_files(), glob_files(), read_file(), write_file()
-Sandbox: python(), bash() — Nexus at /mnt/nexus
+- Read file CANNOT read binary files (e.g. pdf, excel, doc, etc.) directly, you need to use the parsed path format to get the parsed markdown.
+- To get the markdown of a binary file, use the parsed path format: /path/to/file.ext -> /path/to/file_parsed.ext.md
+- E.g. /path/to/file.pdf -> /path/to/file_parsed.pdf.md, /path/to/file.xlsx -> /path/to/file_parsed.xlsx.md, /path/to/file.doc -> /path/to/file_parsed.doc.md, etc.
 
-read_file examples:
-- cat /file.py — full file
-- cat /file.py 10 20 — lines 10-20
-- less /large.json — preview
+Sandbox(optional): python(), bash()
+- To access files inside Nexus, you MUST add prefix /mnt/nexus to the path.
 
 Workflow: Search → Read → Analyze → Execute/Write
 
-Note: In sandboxes, prefix paths with /mnt/nexus
 </nexus_tools>
 """
 

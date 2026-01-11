@@ -35,7 +35,7 @@ from langchain.agents import create_agent
 from langchain_core.runnables import RunnableConfig
 
 from shared.config.llm_config import get_llm
-from shared.tools.nexus_tools import get_nexus_tools
+from shared.tools.nexus_tools import get_nexus_fs_tools, get_nexus_sandbox_tools, get_web_tools
 
 # Configure logging to show INFO level logs
 logging.basicConfig(
@@ -52,8 +52,6 @@ if E2B_TEMPLATE_ID:
 else:
     print("E2B sandbox disabled (E2B_TEMPLATE_ID not set)")
 
-# Create tools (no API key needed - will be passed per-request via metadata)
-tools = get_nexus_tools()
 
 # LLM will be created lazily on first use (allows import without API keys)
 _llm = None
@@ -86,9 +84,12 @@ async def agent(config: RunnableConfig):
 
     system_prompt_str = await get_system_prompt_async(config, role="general")
 
-    # Create the agent with the create_agent API
+    tools = get_nexus_fs_tools() + get_web_tools()
+    if config.get("metadata", {}).get("sandbox_id"):
+        tools += get_nexus_sandbox_tools()
+
     return create_agent(
         model=get_llm_instance(),
         tools=tools,
-        system_prompt=system_prompt_str,  # Pass string directly with full context
+        system_prompt=system_prompt_str,
     )
