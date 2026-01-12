@@ -120,6 +120,80 @@ async def get_skills_prompt_async(config: RunnableConfig, state: dict[str, Any] 
         return ""
 
 
+async def get_connectors_prompt_async(config: RunnableConfig, state: dict[str, Any] | None = None) -> str:
+    """Generate a formatted connectors prompt section from active Nexus connectors.
+
+    Args:
+        config: Runtime configuration containing auth metadata
+        state: Optional agent state
+
+    Returns:
+        Formatted XML string describing available connectors, or empty string if no connectors found
+    """
+    try:
+        from nexus_client.langgraph.tools import list_connectors
+
+        # list_connectors returns all mounts, filter for connector backends only
+        all_mounts = await list_connectors(config, state)
+
+        # Filter to only connector backends (exclude LocalBackend, etc.)
+        connector_backends = ["GmailConnectorBackend", "SlackConnectorBackend",
+                            "GDriveConnectorBackend", "XConnectorBackend"]
+        connectors_data = [
+            mount for mount in all_mounts
+            if mount.get("backend_type") in connector_backends
+        ]
+
+        if not connectors_data:
+            return ""
+
+        logger.info(f"Loaded {len(connectors_data)} active connectors for prompt")
+
+        # Map backend types to human-readable names and descriptions
+        connector_info = {
+            "GmailConnectorBackend": ("Gmail", "Access your Gmail messages and threads"),
+            "SlackConnectorBackend": ("Slack", "Access Slack channels, DMs, and messages"),
+            "GDriveConnectorBackend": ("Google Drive", "Access Google Drive files and folders"),
+            "XConnectorBackend": ("X (Twitter)", "Access X/Twitter posts and timeline"),
+        }
+
+        prompt_lines = ["\n\n<connectors count=\"", str(len(connectors_data)), "\">\n"]
+
+        for conn in connectors_data:
+            mount_point = conn.get("mount_point", "Unknown")
+            backend_type = conn.get("backend_type", "Unknown")
+            readonly = conn.get("readonly", False)
+
+            # Get friendly name and description
+            friendly_name, description = connector_info.get(
+                backend_type, (backend_type, "Third-party service integration")
+            )
+
+            prompt_lines.append("  <connector>\n")
+            prompt_lines.append(f"    <name>{friendly_name}</name>\n")
+            prompt_lines.append(f"    <description>{description}</description>\n")
+            prompt_lines.append(f"    <mount_point>{mount_point}</mount_point>\n")
+            prompt_lines.append(f"    <backend_type>{backend_type}</backend_type>\n")
+            if readonly:
+                prompt_lines.append("    <readonly>true</readonly>\n")
+            prompt_lines.append("  </connector>\n")
+
+        prompt_lines.append("</connectors>\n")
+
+        return "".join(prompt_lines)
+
+    except ImportError as e:
+        logger.error(f"ImportError: {e}")
+        logger.error("Make sure nexus-fs-python[langgraph] is installed")
+        return ""
+    except Exception as e:
+        # If connector listing fails, return empty string (don't break the agent)
+        import traceback
+        logger.error(f"ERROR: {type(e).__name__}: {e}")
+        logger.error(f"Traceback:\n{traceback.format_exc()}")
+        return ""
+
+
 async def get_system_prompt_async(
     config: RunnableConfig | None = None, role: str = "general"
 ) -> str:
@@ -142,8 +216,13 @@ async def get_system_prompt_async(
     if config:
         skills_section = await get_skills_prompt_async(config, state=None)
 
+    # Add connectors section
+    connectors_section = ""
+    if config:
+        connectors_section = await get_connectors_prompt_async(config, state=None)
+
     # Start building the full prompt
-    full_prompt = base_prompt + skills_section
+    full_prompt = base_prompt + skills_section + connectors_section
 
     # Add opened file context if available
     if config:
