@@ -44,7 +44,7 @@ DENTAL_SYSTEM_PROMPT = """你是慧牙(Huiya)，一个牙科临床循证助手�
 
 ## 工作流程：
 1. 用户提出牙科问题
-2. 读取SKILL.md 获取更多信息
+2. 读取skill目录下的SKILL.md,获取更多信息
 3. 使用适当的工具(web_search、read_file 等)查找相关信息
 4. 等待工具结果
 5. 在答案中使用返回的信息和引用
@@ -95,6 +95,8 @@ async def agent(config: RunnableConfig):
         # Use specific provider
         config = {"metadata": {"llm_provider": "anthropic", "llm_tier": "pro"}}
     """
+    from shared.prompts.react_prompt import get_skills_prompt_async
+
     # Extract LLM configuration from metadata
     metadata = config.get("metadata", {})
     llm_provider = metadata.get("llm_provider", "gemini")  # Default to gemini for dental agent
@@ -102,6 +104,12 @@ async def agent(config: RunnableConfig):
     llm_model = metadata.get("llm_model")
     enable_thinking = metadata.get("enable_thinking", True)  # Default to enabled for dental agent
     thinking_budget = metadata.get("thinking_budget", 2048)
+
+    # Get skills prompt section from assigned_skills in metadata
+    skills_section = await get_skills_prompt_async(config, state=None)
+    
+    # Combine dental system prompt with skills section
+    system_prompt_str = DENTAL_SYSTEM_PROMPT + skills_section
 
     # Use react agent tools (Nexus filesystem + web tools)
     tools = get_nexus_fs_tools() + get_web_tools()
@@ -115,5 +123,5 @@ async def agent(config: RunnableConfig):
             thinking_budget=thinking_budget,
         ),
         tools=tools,
-        system_prompt=DENTAL_SYSTEM_PROMPT,
+        system_prompt=system_prompt_str,
     )
