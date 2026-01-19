@@ -2,7 +2,8 @@
   "dependencies": ["."],
   "graphs": {
     "react": "./agents/react/agent.py:agent",
-    "agent": "./agents/react/agent.py:agent"
+    "agent": "./agents/react/agent.py:agent",
+    "dental_agent": "./agents/dental/agent.py:agent"
   },
   "env": ".env"
 }
